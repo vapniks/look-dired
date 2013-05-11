@@ -19,43 +19,19 @@ Copyleft (Ↄ) 2013, Joe Bloggs, all rites reversed.
 
 look-mode 
 
+* Commentary
+Bitcoin donations gratefully accepted: 1ArFina3Mi8UDghjarGqATeBgXRDWrsmzo
 
-; This file is NOT part of GNU Emacs
-
-; License
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3, or (at your option)
-any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; see the file COPYING.
- - If not, see <http :://www.gnu.org/licenses/>.
-
-; Commentary: 
-
-How to create documentation and distribute package:
-
-    1) Use org-readme-top-header-to-readme to create initial Readme.org file.
-    2) Use M-x auto-document to insert descriptions of commands and documents
-    3) Create documentation in the Readme.org file:
-       - Use org-mode features for structuring the data.
-       - Divide the commands into different categories and create headings
-         containing org lists of the commands in each category.
-       - Create headings with any other extra information if needed (e.g. customization).
-    4) In this buffer use org-readme-to-commentary to fill Commentary section with
-       documentation from Readme.org file.
-    5) Make any necessary adjustments to the documentation in this file (e.g. remove the installation
-       and customization sections added in previous step since these should already be present).
-    6) Use org-readme-marmalade-post and org-readme-convert-to-emacswiki to post
-       the library on Marmalade and EmacsWiki respectively.
-
+This library provides extra commands for [[http://www.emacswiki.org/emacs/LookMode][look-mode]] (see below).
+In addition if you mark some files in a dired buffer and then run look-at-file (or press M-l), 
+all of the marked files will be visited in the *look* buffer.
+** New commands
+- look-dired-do-rename                  : Rename current looked file, to location given by TARGET.
+- look-dired-unmark-looked-files        : Unmark all the files in `look-buffer' in the corresponding dired-mode buffer.
+- look-dired-mark-looked-files          : Mark all the files in `look-buffer' in the corresponding dired-mode buffer.
+- look-dired-mark-current-looked-file   : Mark `look-current-file' in the corresponding dired-mode buffer.
+- look-dired-unmark-current-looked-file : Unmark `look-current-file' in the corresponding dired-mode buffer.
+- look-dired-run-associated-program     : Run program associated with currently looked at file.
 
 * Installation
 
