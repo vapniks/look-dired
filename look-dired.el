@@ -132,17 +132,18 @@ the `look-wildcard' argument, or a dired buffer containing marked files as the
 		   (list "" (current-buffer))
 		 (list (read-from-minibuffer "Enter filename (w/ wildcards): "))))
   (setq look-dired-buffer dired-buffer)
-  (if (and (string-match "[Jj][Pp][Ee]?[Gg]" look-wildcard)
+  (if (and look-wildcard
+	   (string-match "[Jj][Pp][Ee]?[Gg]" look-wildcard)
            (not (featurep 'eimp)))
       (require 'eimp nil t))
-  (if (string= look-wildcard "")
+  (if (and look-wildcard (string= look-wildcard ""))
       (setq look-wildcard "*"))
   (setq look-forward-file-list nil)
   (setq look-subdir-list (list "./"))
   (setq look-reverse-file-list nil)
   (setq look-current-file nil)
   (setq look-pwd (replace-regexp-in-string 
-                  "~" (getenv "HOME")
+                  "^~" (getenv "HOME")
                   (replace-regexp-in-string 
                    "^Directory " "" (pwd))))
   (setq look-dired-rename-target nil)
@@ -166,7 +167,8 @@ the `look-wildcard' argument, or a dired buffer containing marked files as the
                        (throw 'skip-this-one nil)))))
           (setq look-forward-file-list
                 (nconc look-forward-file-list
-                       (list (concat look-pwd lfl-item))))
+                       (list (if (file-name-absolute-p lfl-item) lfl-item
+			       (concat look-pwd lfl-item)))))
         (if (and (file-directory-p lfl-item)
                  ;; check if any regexps in skip list match directory
                  (catch 'skip-this-one 
@@ -178,7 +180,9 @@ the `look-wildcard' argument, or a dired buffer containing marked files as the
                       (nconc fullpath-dir-list
                              (list lfl-item)
                              (list-subdirectories-recursively
-                              (concat look-pwd lfl-item) look-skip-directory-list)))
+                              (if (file-name-absolute-p lfl-item) lfl-item
+				(concat look-pwd lfl-item))
+			      look-skip-directory-list)))
               (setq fullpath-dir-list
                     (nconc fullpath-dir-list
                            (list lfl-item)))))))
