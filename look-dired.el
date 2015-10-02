@@ -118,10 +118,15 @@
 ;;;; Navigation Commands
 ;; Redefine look-modes `look-at-files' command
 ;;;###autoload
-(cl-defun look-at-files (look-wildcard &optional dired-buffer)
-  "Look at files in a directory.  Insert them into a temporary
-buffer one at a time.  This function gets the file list and passes
-it to look-at-next-file"
+(cl-defun look-at-files (look-wildcard &optional dired-buffer file-list)
+  "Look at files in a directory.  Insert them into a temporary buffer one at a time. 
+This function gets the file list and passes it to `look-at-next-file'.
+When called interactively, if the current directory is a dired buffer containing 
+marked files then those files will be used, otherwise a filename with wildcards
+will be prompted for to match the files to be used.
+When called programmatically, you can either supply a filename with wildcards to
+the `look-wildcard' argument, or a dired buffer containing marked files as the 
+`dired-buffer' argument, or a list of files as the `file-list' argument."
   (interactive (if (and (eq major-mode 'dired-mode)
 			(look-dired-has-marked-file))
 		   (list "" (current-buffer))
@@ -133,7 +138,7 @@ it to look-at-next-file"
   (if (string= look-wildcard "")
       (setq look-wildcard "*"))
   (setq look-forward-file-list nil)
-  (setq look-subdir-list (list "./"))  
+  (setq look-subdir-list (list "./"))
   (setq look-reverse-file-list nil)
   (setq look-current-file nil)
   (setq look-pwd (replace-regexp-in-string 
@@ -141,11 +146,13 @@ it to look-at-next-file"
                   (replace-regexp-in-string 
                    "^Directory " "" (pwd))))
   (setq look-dired-rename-target nil)
-  (let ((look-file-list (if (eq major-mode 'dired-mode)
-			    (or (and (look-dired-has-marked-file)
-				     (look-dired-get-marked-files))
-                                (file-expand-wildcards look-wildcard))
-			  (file-expand-wildcards look-wildcard)))
+  (let ((look-file-list (or file-list
+			    (and (eq major-mode 'dired-mode)
+				 (look-dired-has-marked-file)
+				 (look-dired-get-marked-files))
+			    (and look-wildcard
+				 (file-expand-wildcards look-wildcard))
+			    (error "No files supplied")))
         (fullpath-dir-list nil))
     ;; use relative file names to prevent weird side effects with skip lists
     ;; cat look-pwd with filename, separate dirs from files,
