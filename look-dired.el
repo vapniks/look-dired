@@ -42,7 +42,7 @@
 ;; Bitcoin donations gratefully accepted: 1ArFina3Mi8UDghjarGqATeBgXRDWrsmzo
 ;;
 ;; This library provides extra commands for [[http://www.emacswiki.org/emacs/LookMode][look-mode]] (see below).
-;; In addition if you mark some files in a dired buffer and then run look-at-file (or press M-l), 
+;; In addition if you mark some files in a dired buffer and then run look-at-files (or press M-l), 
 ;; all of the marked files will be visited in the *look* buffer.
 ;;;;
 
@@ -118,7 +118,7 @@
 ;;;; Navigation Commands
 ;; Redefine look-modes `look-at-files' command
 ;;;###autoload
-(defun* look-at-files (look-wildcard &optional dired-buffer)
+(cl-defun look-at-files (look-wildcard &optional dired-buffer)
   "Look at files in a directory.  Insert them into a temporary
 buffer one at a time.  This function gets the file list and passes
 it to look-at-next-file"
