@@ -109,6 +109,7 @@
 (define-key look-minor-mode-map (kbd "M-u") 'look-dired-unmark-current-looked-file)
 (define-key look-minor-mode-map (kbd "M-U") 'look-dired-unmark-looked-files)
 (define-key look-minor-mode-map (kbd "M-RET") 'look-dired-run-associated-program)
+(define-key look-minor-mode-map (kbd "M-D") 'look-dired-dired)
 
 (defadvice look-reset-variables (after look-dired-reset-variables activate)
   "Reset `look-dired-rename-target' and `look-dired-buffer'."
@@ -196,6 +197,7 @@ the `look-wildcard' argument, or a dired buffer containing marked files as the
   (get-buffer-create look-buffer)
   (look-at-next-file))
 
+;;;###autoload
 (defun look-dired-get-marked-files nil
   "Get all the marked files in current dired buffer.
 The returned file names are relative file names."
@@ -204,6 +206,7 @@ The returned file names are relative file names."
 		(replace-regexp-in-string (concat "^" look-pwd) "" file))
 	    file-list)))
 
+;;;###autoload
 (defun look-dired-has-marked-file nil
   "Return `t' if there are marked files in current dired buffer."
   (save-excursion
@@ -247,41 +250,41 @@ of `dired-dwim-target' (usually the directory in which the current file is locat
 ;;; TODO: Should `look-current-file' be updated after the moving? Now
 ;;; it'll result in an error if there are two continous rename while the
 ;;; first op rename the file to a different directory.
+;;;###autoload
 (defun look-dired-do-create-file (op-symbol file-creator operation arg
 					    &optional marker-char op1 prompt target-file
 					    how-to prefix suffix)
   "Create a new file for `look-current-file'.
 Prompts user for target, which is a directory in which to create
-  the new files.  Target may also be a plain file if only one marked
-  file exists.  The way the default for the target directory is
-  computed depends on the value of `dired-dwim-target-directory'.
+the new files.  Target may also be a plain file if only one marked
+file exists.  The way the default for the target directory is
+computed depends on the value of `dired-dwim-target-directory'.
 OP-SYMBOL is the symbol for the operation.  Function `dired-mark-pop-up'
-  will determine whether pop-ups are appropriate for this OP-SYMBOL.
+will determine whether pop-ups are appropriate for this OP-SYMBOL.
 FILE-CREATOR and OPERATION as in `dired-create-files'.
 ARG as in `dired-get-marked-files'.
 Optional arg MARKER-CHAR as in `dired-create-files'.
-Optional arg OP1 is an alternate form for OPERATION if there is
-  only one file.
+Optional arg OP1 is an alternate form for OPERATION if there is only one file.
 Optional arg PROMPT determines whether prompts for the target location.
 `nil' means not prompt and TARGET-FILE is the target location, non-nil
 means prompt for the target location.
 Optional arg HOW-TO determiness how to treat the target.
-  If HOW-TO is nil, use `file-directory-p' to determine if the
-   target is a directory.  If so, the marked file(s) are created
-   inside that directory.  Otherwise, the target is a plain file;
-   an error is raised unless there is exactly one marked file.
-  If HOW-TO is t, target is always treated as a plain file.
-  Otherwise, HOW-TO should be a function of one argument, TARGET.
-   If its return value is nil, TARGET is regarded as a plain file.
-   If it return value is a list, TARGET is a generalized
-    directory (e.g. some sort of archive).  The first element of
-    this list must be a function with at least four arguments:
-      operation - as OPERATION above.
-      rfn-list  - list of the relative names for the marked files.
-      fn-list   - list of the absolute names for the marked files.
-      target    - the name of the target itself.
-      The rest of into-dir are optional arguments.
-   For any other return value, TARGET is treated as a directory."
+If HOW-TO is nil, use `file-directory-p' to determine if the
+target is a directory.  If so, the marked file(s) are created
+inside that directory.  Otherwise, the target is a plain file;
+an error is raised unless there is exactly one marked file.
+If HOW-TO is t, target is always treated as a plain file.
+Otherwise, HOW-TO should be a function of one argument, TARGET.
+If its return value is nil, TARGET is regarded as a plain file.
+If it return value is a list, TARGET is a generalized
+directory (e.g. some sort of archive).  The first element of
+this list must be a function with at least four arguments:
+ operation - as OPERATION above.
+ rfn-list  - list of the relative names for the marked files.
+ fn-list   - list of the absolute names for the marked files.
+ target    - the name of the target itself.
+The rest of into-dir are optional arguments.
+For any other return value, TARGET is treated as a directory."
   (or op1 (setq op1 operation))
   (let* ((fn-list (list look-current-file))
 	 (rfn-list (mapcar (function dired-make-relative) fn-list))
@@ -344,6 +347,7 @@ Optional arg HOW-TO determiness how to treat the target.
 ;;; This is a modified version of `dired-mark-read-file-name'
 ;;; I have added and extra arg `initial' which specifies an initial part 
 ;;; of the filename (after the cursor position) in the prompt.
+;;;###autoload
 (defun look-dired-mark-read-file-name (prompt dir op-symbol arg files
 					 &optional default initial)
   (dired-mark-pop-up
@@ -400,6 +404,7 @@ Similar to `look-dired-unmark-looked-files', this function only work when
     (when show-next-file
       (look-at-next-file))))
 
+;;;###autoload
 (defun look-dired-mark-file (file)
   "`dired-mark' FILE in `look-dired-buffer'"
   (assert look-dired-buffer)
@@ -426,7 +431,7 @@ Requires run-assoc library."
   (require 'run-assoc)
   (run-associated-program look-current-file))
 
-
+;;;###autoload
 (defun look-dired-unmark-file (file)
   "`dired-unmark' FILE in `look-dired-buffer'"
   (assert look-dired-buffer)
@@ -444,6 +449,20 @@ Requires run-assoc library."
 	    (dired-unmark 1)
 	    (return-from nil))
 	  (forward-line 1))))))
+
+;;;###autoload
+(defun look-dired-dired nil
+  "Jump to a dired buffer containing the looked at files.
+If such a buffer does not already exist, create one."
+  (interactive)
+  (if (buffer-live-p look-dired-buffer)
+      (switch-to-buffer look-dired-buffer)
+    (if (get-buffer "*look-dired*") (kill-buffer "*look-dired*"))
+    (dired (cons "*look-dired*"
+		 (append look-reverse-file-list
+			 (list look-current-file)
+			 look-forward-file-list)))
+    (setq look-dired-buffer (get-buffer "*look-dired*"))))
 
 (provide 'look-dired)
 
