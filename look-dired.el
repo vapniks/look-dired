@@ -97,10 +97,10 @@
 ;;; Code:
 
 (defvar look-dired-rename-target nil
-  "the target of `look-current-file' in `look-dired-do-rename'.")
+  "The target of `look-current-file' in `look-dired-do-rename'.")
 ;; TODO make-local-variable
 (defvar look-dired-buffer nil
-  "the associated dired-mode buffer, from which `look-at-files' is called.")
+  "The associated `dired-mode' buffer, from which `look-at-files' is called.")
 
 ;; Keybindings for look-dired commands
 (define-key look-minor-mode-map (kbd "M-r") 'look-dired-do-rename)
@@ -115,6 +115,13 @@
   "Reset `look-dired-rename-target' and `look-dired-buffer'."
   (setq look-dired-rename-target nil)
   (setq look-dired-buffer nil))
+
+;;; Useful helper functions
+(defsubst look-file-list nil
+  "Returns the list of looked at files."
+  (append look-forward-file-list
+	  (list look-current-file)
+	  look-reverse-file-list))
 
 ;;;; Navigation Commands
 ;; Redefine look-modes `look-at-files' command
@@ -358,12 +365,12 @@ For any other return value, TARGET is treated as a directory."
 ;;;;;;;;;; Look dired mark/unmark commands ;;;;;;;;;;;
 ;;;###autoload
 (defun look-dired-unmark-looked-files ()
-  "Unmark all the files in `look-buffer' in the corresponding dired-mode buffer.
-This is only meaningful when `look-buffer' has an associated dired-mode buffer,
-i.e. `look-at-files' is called from a dired-mode buffer."
+  "Unmark all the files in `look-buffer' in the corresponding `dired-mode' buffer.
+This is only meaningful when `look-buffer' has an associated `dired-mode' buffer,
+i.e. `look-at-files' is called from a `dired-mode' buffer."
   (interactive)
   (when look-dired-buffer
-    (let ((file-list (append look-forward-file-list (list look-current-file) look-reverse-file-list)))
+    (let ((file-list (look-file-list)))
       (mapc #'look-dired-unmark-file file-list))
     (message "Unmarked all looked at files in dired buffer")))
 
@@ -374,7 +381,7 @@ This is only meaningful when `look-buffer' has an associated dired-mode buffer,
 i.e. `look-at-files' is called from a dired-mode buffer."
   (interactive)
   (when look-dired-buffer
-    (let ((file-list (append look-forward-file-list (list look-current-file) look-reverse-file-list)))
+    (let ((file-list (look-file-list)))
       (mapc #'look-dired-mark-file file-list))
     (message "Marked all looked at files in dired buffer")))
 
@@ -462,10 +469,7 @@ If such a buffer does not already exist, create one."
   (if (buffer-live-p look-dired-buffer)
       (switch-to-buffer look-dired-buffer)
     (if (get-buffer "*look-dired*") (kill-buffer "*look-dired*"))
-    (dired (cons "*look-dired*"
-		 (append look-reverse-file-list
-			 (list look-current-file)
-			 look-forward-file-list)))
+    (dired (cons "*look-dired*" (look-file-list)))
     (setq look-dired-buffer (get-buffer "*look-dired*"))))
 
 (provide 'look-dired)
