@@ -12,7 +12,7 @@
 ;; URL: https://github.com/vapniks/look-dired
 ;; Keywords: convenience
 ;; Compatibility: GNU Emacs 24.3.1
-;; Package-Requires: ((look-mode "1.0"))
+;; Package-Requires: ((look-mode "1.0") (cl-lib "0.5"))
 ;;
 ;; Features that might be required by this library:
 ;;
@@ -93,6 +93,7 @@
 
 ;;; Require
 (require 'look-mode)
+(require 'cl-lib)
 
 ;;; Code:
 
@@ -407,20 +408,20 @@ Similar to `look-dired-unmark-looked-files', this function only work when
 ;;;###autoload
 (defun look-dired-mark-file (file)
   "`dired-mark' FILE in `look-dired-buffer'"
-  (assert look-dired-buffer)
+  (cl-assert look-dired-buffer)
   ;; Should we give an message when corresponding dired-buffer is not alive?
   (when (buffer-live-p look-dired-buffer)
     (save-excursion
       (set-buffer look-dired-buffer)
       (goto-char (point-min))
-      (block nil
+      (cl-block nil
 	(while (not (eobp))
 	  (when (and (not (looking-at dired-re-dot))
 		     (not (eolp))
 		     (let ((fn (dired-get-filename nil t)))
 		       (and fn (string= fn file))))
 	    (dired-mark 1)
-	    (return-from nil))
+	    (cl-return-from nil))
 	 (forward-line 1))))))
 
 ;;;###autoload
@@ -434,20 +435,20 @@ Requires run-assoc library."
 ;;;###autoload
 (defun look-dired-unmark-file (file)
   "`dired-unmark' FILE in `look-dired-buffer'"
-  (assert look-dired-buffer)
+  (cl-assert look-dired-buffer)
   ;; Should we give an message when corresponding dired-buffer is not alive?  
   (when (buffer-live-p look-dired-buffer)
     (save-excursion
       (set-buffer look-dired-buffer)
       (goto-char (point-min))
-      (block nil
+      (cl-block nil
 	(while (not (eobp))
 	  (when (and (not (looking-at dired-re-dot))
 		     (not (eolp))
 		     (let ((fn (dired-get-filename nil t)))
 		       (and fn (string= fn file))))
 	    (dired-unmark 1)
-	    (return-from nil))
+	    (cl-return-from nil))
 	  (forward-line 1))))))
 
 ;;;###autoload
