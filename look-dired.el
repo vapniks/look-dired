@@ -126,8 +126,8 @@ When called interactively, if the current directory is a dired buffer containing
 marked files then those files will be used, otherwise a filename with wildcards
 will be prompted for to match the files to be used.
 When called programmatically, you can either supply a filename with wildcards to
-the `look-wildcard' argument, or a dired buffer containing marked files as the 
-`dired-buffer' argument, or a list of files as the `file-list' argument."
+the LOOK-WILDCARD argument, or a dired buffer containing marked files as the 
+DIRED-BUFFER argument, or a list of files as the FILE-LIST argument."
   (interactive (if (and (eq major-mode 'dired-mode)
 			(look-dired-has-marked-file))
 		   (list "" (current-buffer))
