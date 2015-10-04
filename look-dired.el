@@ -118,7 +118,7 @@
 
 ;;; Useful helper functions
 (defsubst look-file-list nil
-  "Returns the list of looked at files."
+  "Return the list of looked at files."
   (append look-forward-file-list
 	  (list look-current-file)
 	  look-reverse-file-list))
@@ -155,18 +155,18 @@ DIRED-BUFFER argument, or a list of files as the FILE-LIST argument."
                   (replace-regexp-in-string 
                    "^Directory " "" (pwd))))
   (setq look-dired-rename-target nil)
-  (let ((look-file-list (or file-list
-			    (and (eq major-mode 'dired-mode)
-				 (look-dired-has-marked-file)
-				 (look-dired-get-marked-files))
-			    (and look-wildcard
-				 (file-expand-wildcards look-wildcard))
-			    (error "No files supplied")))
+  (let ((look-files (or file-list
+			(and (eq major-mode 'dired-mode)
+			     (look-dired-has-marked-file)
+			     (look-dired-get-marked-files))
+			(and look-wildcard
+			     (file-expand-wildcards look-wildcard))
+			(error "No files supplied")))
         (fullpath-dir-list nil))
     ;; use relative file names to prevent weird side effects with skip lists
     ;; cat look-pwd with filename, separate dirs from files,
     ;; remove files/dirs that match elements of the skip lists ;;
-    (dolist (lfl-item look-file-list look-forward-file-list)
+    (dolist (lfl-item look-files look-forward-file-list)
       (if (and (file-regular-p lfl-item)
                ;; check if any regexps in skip list match filename
                (catch 'skip-this-one 
