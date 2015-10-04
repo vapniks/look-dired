@@ -406,22 +406,24 @@ Similar to `look-dired-unmark-looked-files', this function only work when
 
 ;;;###autoload
 (defun look-dired-mark-file (file)
-  "`dired-mark' FILE in `look-dired-buffer'"
+  "`dired-mark' FILE in `look-dired-buffer'."
   (assert look-dired-buffer)
-  ;; Should we give an message when corresponding dired-buffer is not alive?
-  (when (buffer-live-p look-dired-buffer)
-    (save-excursion
-      (set-buffer look-dired-buffer)
-      (goto-char (point-min))
-      (block nil
-	(while (not (eobp))
-	  (when (and (not (looking-at dired-re-dot))
-		     (not (eolp))
-		     (let ((fn (dired-get-filename nil t)))
-		       (and fn (string= fn file))))
-	    (dired-mark 1)
-	    (return-from nil))
-	 (forward-line 1))))))
+  (if (buffer-live-p look-dired-buffer)
+      (save-excursion
+	(set-buffer look-dired-buffer)
+	(goto-char (point-min))
+	(block nil
+	  (while (not (eobp))
+	    (when (and (not (looking-at dired-re-dot))
+		       (not (eolp))
+		       (let ((fn (dired-get-filename nil t)))
+			 (and fn (string= fn file))))
+	      (dired-mark 1)
+	      (return-from nil))
+	    (forward-line 1))))
+    (error "No %s buffer available"
+	   (if (stringp look-dired-buffer) look-dired-buffer
+	     (buffer-name look-dired-buffer)))))
 
 ;;;###autoload
 (defun look-dired-run-associated-program nil
@@ -433,10 +435,9 @@ Requires run-assoc library."
 
 ;;;###autoload
 (defun look-dired-unmark-file (file)
-  "`dired-unmark' FILE in `look-dired-buffer'"
+  "`dired-unmark' FILE in `look-dired-buffer'."
   (assert look-dired-buffer)
-  ;; Should we give an message when corresponding dired-buffer is not alive?  
-  (when (buffer-live-p look-dired-buffer)
+  (if (buffer-live-p look-dired-buffer)
     (save-excursion
       (set-buffer look-dired-buffer)
       (goto-char (point-min))
@@ -448,7 +449,10 @@ Requires run-assoc library."
 		       (and fn (string= fn file))))
 	    (dired-unmark 1)
 	    (return-from nil))
-	  (forward-line 1))))))
+	  (forward-line 1))))
+    (error "No %s buffer available"
+	   (if (stringp look-dired-buffer) look-dired-buffer
+	     (buffer-name look-dired-buffer)))))
 
 ;;;###autoload
 (defun look-dired-dired nil
