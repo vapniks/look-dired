@@ -16,7 +16,7 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;; look-mode 
+;; look-mode cl find-dired
 ;;
 
 ;;; This file is NOT part of GNU Emacs
@@ -92,7 +92,9 @@
 ;;
 
 ;;; Require
+(require 'cl-lib)
 (require 'look-mode)
+(require 'find-dired)
 
 ;;; Code:
 
@@ -466,11 +468,39 @@ Requires run-assoc library."
   "Jump to a dired buffer containing the looked at files.
 If such a buffer does not already exist, create one."
   (interactive)
-  (if (buffer-live-p look-dired-buffer)
-      (switch-to-buffer look-dired-buffer)
-    (if (get-buffer "*look-dired*") (kill-buffer "*look-dired*"))
-    (dired (cons "*look-dired*" (look-file-list)))
-    (setq look-dired-buffer (get-buffer "*look-dired*"))))
+  (if (buffer-live-p look-buffer)
+      (if (buffer-live-p look-dired-buffer)
+	  (switch-to-buffer look-dired-buffer)
+	(if (get-buffer "*look-dired*") (kill-buffer "*look-dired*"))
+	(dired (cons "*look-dired*" (look-file-list)))
+	(setq look-dired-buffer (get-buffer "*look-dired*")))))
+
+;;;###autoload
+(defun look-dired-find (dir args)
+  "Run `find' and view found files in *look* buffer.
+The `find' command run (after changing into DIR) is:
+
+    find . \\( ARGS \\) -ls
+Warning: this will lock up Emacs if the find command is slow to return.
+Instead you can use `find-dired', then mark all the files, and look at
+them with `look-dired'."
+  (interactive
+   (let ((default (and find-dired-default-fn
+                       (funcall find-dired-default-fn))))
+     (list (ido-read-file-name "Run `find' in directory: " nil "" t)
+           (read-from-minibuffer "Run `find' (with args): " default
+                                 nil nil 'find-args-history default t))))
+  (find-dired dir args)
+  (while (eq 'run (process-status "find")) (sleep-for 0.2))
+  (dired-mark-unmarked-files ".*" nil)
+  (let ((buf (current-buffer)))
+    (look-at-files nil nil (remove nil
+				   (mapcar (lambda (x)
+					     (car (remove x (file-expand-wildcards
+							     (replace-regexp-in-string "\\.txt$" ".*" x)))))
+					   (dired-get-marked-files))))
+    (kill-buffer buf)))
+
 
 (provide 'look-dired)
 
