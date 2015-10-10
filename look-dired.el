@@ -501,6 +501,58 @@ them with `look-dired'."
 					   (dired-get-marked-files))))
     (kill-buffer buf)))
 
+(defcustom look-ocr-suffix "txt"
+  "File suffix for text files associated with image files."
+  :group 'look
+  :type 'string)
+
+(defcustom look-ocr-directory nil
+  "Directory containing (OCR) text files associated with image/pdf files (e.g. from OCR).
+This can be either an absolute or relative directory. If nil then text files will be 
+searched for in the same directory as the associated image files."
+  :group 'look
+  :type 'directory)
+
+(defcustom look-ocr-types '("jpg" "JPG" "pdf" "PDF" "gif" "GIF" "png" "PNG" "bmp" "BMP" "tiff" "TIFF")
+  "File extensions of files that may have associated text files."
+  :group 'look
+  :type '(repeat string))
+
+(defun look-associated-text-file (file)
+  "Return path to text file associated with FILE.
+The text should be in `look-ocr-directory' (which see),
+with file extension `look-ocr-suffix'."
+  (concat (file-name-as-directory
+	   (if look-ocr-directory
+	       (if (file-name-absolute-p look-ocr-directory)
+		   look-ocr-directory
+		 (concat (file-name-directory file) look-ocr-directory))
+	     (file-name-directory file)))
+	  (file-name-base file) "." look-ocr-suffix))
+
+(defun look-re-search-forward (regex)
+  "Search forward through looked at files."
+  (interactive (list (read-regexp "Regexp: ")))
+  (while (and look-current-file
+	      (not (if (not (member (file-name-extension look-current-file)
+				    look-ocr-types))
+		       (with-temp-file look-current-file (re-search-forward regex nil t))
+		     (and (file-exists-p (look-associated-text-file look-current-file))
+			  (with-temp-file (look-associated-text-file look-current-file)
+			    (re-search-forward regex nil t))))))
+    (look-at-next-file)))
+
+(defun look-re-search-backward (regex)
+  "Search backward through looked at files."
+  (interactive (list (read-regexp "Regexp: ")))
+  (while (and look-current-file
+	      (not (if (not (member (file-name-extension look-current-file)
+				    look-ocr-types))
+		       (with-temp-file look-current-file (re-search-backward regex nil t))
+		     (and (file-exists-p (look-associated-text-file look-current-file))
+			  (with-temp-file (look-associated-text-file look-current-file)
+			    (re-search-backward regex nil t))))))
+    (look-at-previous-file)))
 
 (provide 'look-dired)
 
