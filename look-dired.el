@@ -122,7 +122,7 @@
 (defsubst look-file-list nil
   "Return the list of looked at files."
   (append look-forward-file-list
-	  (list look-current-file)
+	  (if look-current-file (list look-current-file))
 	  look-reverse-file-list))
 
 ;;;; Navigation Commands
@@ -553,6 +553,25 @@ with file extension `look-ocr-suffix'."
 			  (with-temp-file (look-associated-text-file look-current-file)
 			    (re-search-backward regex nil t))))))
     (look-at-previous-file)))
+
+(defcustom look-conversion-commands nil
+  "Alist of file extensions and corresponding text conversion commands."
+  :group 'look
+  :type '(alist :key-type (string :tag "file extension") :value-type (string :tag "command")))
+
+(require 'deferred)
+(defun look-create-text-files nil
+  "Create text files from looked at image files using conversion functions.
+The conversion functions are defined in `look-conversion-commands'."
+  (let ((buf (get-buffer-create "*look text extraction*")))
+  (cl-loop for file in (look-file-list)
+	   for ext = (file-name-extension file)
+	   for cmdstr = (format (cdr (assoc ext look-conversion-commands)) file)
+	   if cmdstr do (start-process "look-text-extraction" buf cmdstr)
+	   )
+  
+  ))
+
 
 (provide 'look-dired)
 
