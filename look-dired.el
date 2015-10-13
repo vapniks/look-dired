@@ -559,7 +559,6 @@ with file extension `look-ocr-suffix'."
   :group 'look
   :type '(alist :key-type (string :tag "file extension") :value-type (string :tag "command")))
 
-(require 'deferred)
 (defun look-create-text-files nil
   "Create text files from looked at image files using conversion functions.
 The conversion functions are defined in `look-conversion-commands'."
