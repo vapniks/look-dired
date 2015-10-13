@@ -120,10 +120,10 @@
 
 ;;; Useful helper functions
 (defsubst look-file-list nil
-  "Return the list of looked at files."
-  (append look-forward-file-list
+  "Return the list of looked at files in order."
+  (append (reverse look-reverse-file-list)
 	  (if look-current-file (list look-current-file))
-	  look-reverse-file-list))
+	  look-forward-file-list))
 
 ;;;; Navigation Commands
 ;; Redefine look-modes `look-at-files' command
