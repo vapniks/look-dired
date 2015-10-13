@@ -428,7 +428,7 @@ Similar to `look-dired-unmark-looked-files', this function only work when
 		       (let ((fn (dired-get-filename nil t)))
 			 (and fn (string= fn file))))
 	      (dired-mark 1)
-	      (return-from nil))
+	      (cl-return-from nil))
 	    (forward-line 1))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
@@ -457,7 +457,7 @@ Requires run-assoc library."
 		     (let ((fn (dired-get-filename nil t)))
 		       (and fn (string= fn file))))
 	    (dired-unmark 1)
-	    (return-from nil))
+	    (cl-return-from nil))
 	  (forward-line 1))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
