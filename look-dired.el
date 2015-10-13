@@ -95,6 +95,7 @@
 (require 'cl-lib)
 (require 'look-mode)
 (require 'find-dired)
+(require 'dired-x)
 
 ;;; Code:
 
