@@ -128,7 +128,7 @@
 ;;;; Navigation Commands
 ;; Redefine look-modes `look-at-files' command
 ;;;###autoload
-(cl-defun look-at-files (look-wildcard &optional dired-buffer file-list)
+(cl-defun look-at-files (look-wildcard &optional dired-buffer file-list add)
   "Look at files in a directory.  Insert them into a temporary buffer one at a time. 
 This function gets the file list and passes it to `look-at-next-file'.
 When called interactively, if the current directory is a dired buffer containing 
@@ -136,11 +136,17 @@ marked files then those files will be used, otherwise a filename with wildcards
 will be prompted for to match the files to be used.
 When called programmatically, you can either supply a filename with wildcards to
 the LOOK-WILDCARD argument, or a dired buffer containing marked files as the 
-DIRED-BUFFER argument, or a list of files as the FILE-LIST argument."
+DIRED-BUFFER argument, or a list of files as the FILE-LIST argument.
+If ADD is non-nil then files are added to the end of the currently looked at files, 
+otherwise they replace them."
   (interactive (if (and (eq major-mode 'dired-mode)
 			(look-dired-has-marked-file))
-		   (list "" (current-buffer))
-		 (list (read-from-minibuffer "Enter filename (w/ wildcards): "))))
+		   (list "" (current-buffer) nil
+			 (if (or look-forward-file-list look-reverse-file-list)
+			     (y-or-n-p "Add to current list of looked at files")))
+		 (list (read-from-minibuffer "Enter filename (w/ wildcards): ") nil nil
+		       (if (or look-forward-file-list look-reverse-file-list)
+			   (y-or-n-p "Add to current list of looked at files")))))
   (setq look-dired-buffer dired-buffer)
   (if (and look-wildcard
 	   (string-match "[Jj][Pp][Ee]?[Gg]" look-wildcard)
@@ -148,15 +154,15 @@ DIRED-BUFFER argument, or a list of files as the FILE-LIST argument."
       (require 'eimp nil t))
   (if (and look-wildcard (string= look-wildcard ""))
       (setq look-wildcard "*"))
-  (setq look-forward-file-list nil)
-  (setq look-subdir-list (list "./"))
-  (setq look-reverse-file-list nil)
-  (setq look-current-file nil)
-  (setq look-pwd (replace-regexp-in-string 
-                  "^~" (getenv "HOME")
-                  (replace-regexp-in-string 
-                   "^Directory " "" (pwd))))
-  (setq look-dired-rename-target nil)
+  (if (not add) (setq look-forward-file-list nil
+		      look-backward-file-list nil))
+  (setq look-current-file nil	
+	look-subdir-list (list "./")
+	look-pwd (replace-regexp-in-string 
+		  "^~" (getenv "HOME")
+		  (replace-regexp-in-string 
+		   "^Directory " "" (pwd)))
+	look-dired-rename-target nil)
   (let ((look-files (or file-list
 			(and (eq major-mode 'dired-mode)
 			     (look-dired-has-marked-file)
@@ -168,7 +174,7 @@ DIRED-BUFFER argument, or a list of files as the FILE-LIST argument."
     ;; use relative file names to prevent weird side effects with skip lists
     ;; cat look-pwd with filename, separate dirs from files,
     ;; remove files/dirs that match elements of the skip lists ;;
-    (dolist (lfl-item look-files look-forward-file-list)
+    (dolist (lfl-item look-files)
       (if (and (file-regular-p lfl-item)
                ;; check if any regexps in skip list match filename
                (catch 'skip-this-one 
