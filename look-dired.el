@@ -155,7 +155,7 @@ otherwise they replace them."
   (if (and look-wildcard (string= look-wildcard ""))
       (setq look-wildcard "*"))
   (if (not add) (setq look-forward-file-list nil
-		      look-backward-file-list nil
+		      look-reverse-file-list nil
 		      look-current-file nil))
   (setq look-subdir-list (list "./")
 	look-pwd (replace-regexp-in-string 
