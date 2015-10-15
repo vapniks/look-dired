@@ -143,7 +143,7 @@ otherwise they replace them."
 			(look-dired-has-marked-file))
 		   (list "" (current-buffer) nil
 			 (if (or look-forward-file-list look-reverse-file-list)
-			     (y-or-n-p "Add to current list of looked at files")))
+			     (y-or-n-p "Add to current list of looked at files? ")))
 		 (list (read-from-minibuffer "Enter filename (w/ wildcards): ") nil nil
 		       (if (or look-forward-file-list look-reverse-file-list)
 			   (y-or-n-p "Add to current list of looked at files")))))
@@ -155,9 +155,9 @@ otherwise they replace them."
   (if (and look-wildcard (string= look-wildcard ""))
       (setq look-wildcard "*"))
   (if (not add) (setq look-forward-file-list nil
-		      look-backward-file-list nil))
-  (setq look-current-file nil	
-	look-subdir-list (list "./")
+		      look-backward-file-list nil
+		      look-current-file nil))
+  (setq look-subdir-list (list "./")
 	look-pwd (replace-regexp-in-string 
 		  "^~" (getenv "HOME")
 		  (replace-regexp-in-string 
