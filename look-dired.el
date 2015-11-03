@@ -98,10 +98,10 @@
 
 ;;; Code:
 
-(defvar look-dired-rename-target nil
+(defvar-local look-dired-rename-target nil
   "The target of `look-current-file' in `look-dired-do-rename'.")
 ;; TODO make-local-variable
-(defvar look-dired-buffer nil
+(defvar-local look-dired-buffer nil
   "The associated `dired-mode' buffer, from which `look-at-files' is called.")
 
 ;; Keybindings for look-dired commands
@@ -120,7 +120,7 @@
 
 ;;; Useful helper functions
 (defsubst look-file-list nil
-  "Return the list of looked at files in order."
+  "Return the list of looked at files in current buffer in order."
   (append (reverse look-reverse-file-list)
 	  (if look-current-file (list look-current-file))
 	  look-forward-file-list))
@@ -166,7 +166,9 @@ otherwise they replace them."
   (let ((look-files (or file-list
 			(and (eq major-mode 'dired-mode)
 			     (look-dired-has-marked-file)
-			     (look-dired-get-marked-files))
+			     (mapcar (lambda (file)
+				       (replace-regexp-in-string (concat "^" look-pwd) "" file))
+				     (dired-get-marked-files)))
 			(and look-wildcard
 			     (file-expand-wildcards look-wildcard))
 			(error "No files supplied")))
@@ -211,15 +213,6 @@ otherwise they replace them."
                           (replace-regexp-in-string look-pwd "" fullpath))))))) 
   (get-buffer-create look-buffer)
   (look-at-next-file))
-
-;;;###autoload
-(defun look-dired-get-marked-files nil
-  "Get all the marked files in current dired buffer.
-The returned file names are relative file names."
-  (let ((file-list (dired-get-marked-files)))
-    (mapcar #'(lambda (file)
-		(replace-regexp-in-string (concat "^" look-pwd) "" file))
-	    file-list)))
 
 ;;;###autoload
 (defun look-dired-has-marked-file nil
