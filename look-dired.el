@@ -129,7 +129,7 @@
 ;; Redefine look-modes `look-at-files' command
 ;; TODO: fix to work with buffer-local vars
 ;;;###autoload
-(cl-defun look-at-files (look-wildcard &optional dired-buffer file-list add name)
+(cl-defun look-at-files (look-wildcard &optional add name dired-buffer file-list)
   "Look at files in a directory.  Insert them into a temporary buffer one at a time. 
 This function gets the file list and passes it to `look-at-next-file'.
 When called interactively, if the current directory is a dired buffer containing 
@@ -155,7 +155,7 @@ in buffer NAME (default \"*look*<N>\"), otherwise they replace them."
 		      (name2 (if add name
 			       (generate-new-buffer-name
 				(read-string "Look buffer name: " "*look*:")))))
-		 (list wildcard dired-buffer nil add name2)))
+		 (list wildcard add name2 dired-buffer nil)))
   (if (and look-wildcard (not (featurep 'eimp))
        (string-match (regexp-opt (mapcar 'symbol-name image-types))
 			 look-wildcard))
