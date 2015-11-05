@@ -129,7 +129,7 @@
 ;; Redefine look-modes `look-at-files' command
 ;; TODO: fix to work with buffer-local vars
 ;;;###autoload
-(cl-defun look-at-files (look-wildcard &optional add name dired-buffer file-list)
+(cl-defun look-at-files (look-wildcard &optional add name dired-buffer file-list index)
   "Look at files in a directory.  Insert them into a temporary buffer one at a time. 
 This function gets the file list and passes it to `look-at-next-file'.
 When called interactively, if the current directory is a dired buffer containing 
@@ -142,7 +142,8 @@ When called programmatically, you can either supply a filename with wildcards to
 the LOOK-WILDCARD argument, or a dired buffer containing marked files as the 
 DIRED-BUFFER argument, or a list of files as the FILE-LIST argument.
 If ADD is non-nil then files are added to the end of the currently looked at files
-in buffer NAME (default \"*look*<N>\"), otherwise they replace them."
+in buffer NAME (default \"*look*<N>\"), otherwise they replace them.
+If INDEX is non-nil then goto the INDEX'th file in the list initially."
   (interactive (let* ((diredp (and (eq major-mode 'dired-mode)
 				   (look-dired-has-marked-file)))
 		      (dired-buffer (if diredp (current-buffer) nil))
@@ -227,7 +228,7 @@ in buffer NAME (default \"*look*<N>\"), otherwise they replace them."
                    (list (file-name-as-directory
                           (replace-regexp-in-string look-pwd "" fullpath)))))))
   (look-mode)
-  (look-at-next-file))
+  (look-at-nth-file (or index 0)))
 
 ;;;###autoload
 (defun look-dired-has-marked-file nil
