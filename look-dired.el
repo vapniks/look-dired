@@ -157,10 +157,23 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
 			       (generate-new-buffer-name
 				(read-string "Look buffer name: " "*look*:")))))
 		 (list wildcard add name2 dired-buffer nil)))
+  ;; first check the cache directory isn't too full
+  (let ((totalsize (look-get-cache-directory-size)))
+    (if (and (> totalsize look-cache-directory-size)
+	     (y-or-n-p (format "Cache directory is using more than %d bytes! Remove old files? "
+			       look-cache-directory-size)))
+	(let* ((sortedfiles (sort (directory-files-and-attributes look-cache-directory t nil t)
+				  (lambda (a b) (time-less-p (nth 4 (cdr a)) (nth 4 (cdr b)))))))
+	  (cl-loop for (file . attrib) in sortedfiles
+		   with sum = (- totalsize look-cache-directory-size)
+		   if (> sum 0) do (delete-file file)
+		   (setq sum (- sum (nth 7 attrib)))))))
+  ;; load eimp if necessary
   (if (and look-wildcard (not (featurep 'eimp))
        (string-match (regexp-opt (mapcar 'symbol-name image-types))
 			 look-wildcard))
       (require 'eimp nil t))
+  ;; if no wildcard is supplied match everything with *  
   (if (and look-wildcard (string= look-wildcard ""))
       (setq look-wildcard "*"))
   ;; get look buffer
@@ -228,7 +241,7 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
                    (list (file-name-as-directory
                           (replace-regexp-in-string look-pwd "" fullpath)))))))
   (look-mode)
-  (look-at-nth-file (or index 0)))
+  (look-at-nth-file (or index 1)))
 
 ;;;###autoload
 (defun look-dired-has-marked-file nil
