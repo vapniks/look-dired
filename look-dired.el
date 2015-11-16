@@ -6,7 +6,7 @@
 ;; Maintainer: Joe Bloggs <vapniks@yahoo.com>
 ;; Copyleft (Ↄ) 2013, Joe Bloggs, all rites reversed.
 ;; Created: 2013-05-11 20:39:19
-;; Version: 0.1
+;; Version: 20151110.1832
 ;; Last-Updated: 2013-05-11 20:39:19
 ;;           By: Joe Bloggs
 ;; URL: https://github.com/vapniks/look-dired
@@ -38,31 +38,59 @@
 ;; If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary: 
-;;
+;; 
+;; * Commentary
 ;; Bitcoin donations gratefully accepted: 1ArFina3Mi8UDghjarGqATeBgXRDWrsmzo
-;;
+;; 
 ;; This library provides extra commands for [[http://www.emacswiki.org/emacs/LookMode][look-mode]] (see below).
-;; In addition if you mark some files in a dired buffer and then run look-at-files (or press M-l), 
+;; In addition if you mark some files in a dired buffer and then run look-at-file (or press M-l), 
 ;; all of the marked files will be visited in the *look* buffer.
+;; ** New commands
+;; - look-dired-do-rename                  : Rename current looked file, to location given by TARGET.
+;; - look-dired-unmark-looked-files        : Unmark all the files in `look-buffer' in the corresponding dired-mode buffer.
+;; - look-dired-mark-looked-files          : Mark all the files in `look-buffer' in the corresponding dired-mode buffer.
+;; - look-dired-mark-current-looked-file   : Mark `look-current-file' in the corresponding dired-mode buffer.
+;; - look-dired-unmark-current-looked-file : Unmark `look-current-file' in the corresponding dired-mode buffer.
+;; - look-dired-run-associated-program     : Run program associated with currently looked at file.
+;; 
 ;;;;
 
+;; (org-readme-sync)
+;; (auto-document)
 ;;; Commands:
 ;;
-;; Below are complete command list:
+;; Below is a complete list of commands:
 ;;
 ;;  `look-dired-do-rename'
 ;;    Rename current looked file, to location given by TARGET.
+;;    Keybinding: M-r
 ;;  `look-dired-unmark-looked-files'
-;;    Unmark all the files in `look-buffer' in the corresponding dired-mode buffer.
+;;    Unmark all currently looked at files in the corresponding `dired-mode' buffer.
+;;    Keybinding: M-U
 ;;  `look-dired-mark-looked-files'
-;;    Mark all the files in `look-buffer' in the corresponding dired-mode buffer.
+;;    Mark all currently looked at files in the corresponding dired-mode buffer.
+;;    Keybinding: M-M
 ;;  `look-dired-mark-current-looked-file'
 ;;    Mark `look-current-file' in the corresponding dired-mode buffer.
+;;    Keybinding: M-m
 ;;  `look-dired-unmark-current-looked-file'
 ;;    Unmark `look-current-file' in the corresponding dired-mode buffer.
+;;    Keybinding: M-u
 ;;  `look-dired-run-associated-program'
 ;;    Run program associated with currently looked at file.
+;;    Keybinding: M-RET
+;;  `look-dired-dired'
+;;    Jump to a dired buffer containing the looked at files.
+;;    Keybinding: M-D
+;;  `look-dired-find'
+;;    Run `find' and view found files in `look-mode' buffer.
+;;    Keybinding: M-x look-dired-find
 ;;
+;;; Customizable Options:
+;;
+;; Below is a list of customizable options:
+;;
+
 
 ;;; Installation:
 ;;
@@ -77,6 +105,12 @@
 ;; (require 'look-dired)
 
 ;;; Change log:
+;; 10-Nov-2015      
+;;    Last-Updated: 2013-05-11 20:39:19 (Joe Bloggs)
+;;    ;;    
+;; 10-Nov-2015      
+;;    Last-Updated: 2013-05-11 20:39:19 (Joe Bloggs)
+;;    ;;    
 ;;	
 ;; 2013/05/11
 ;;      * First released.
@@ -179,7 +213,7 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
   ;; get look buffer
   (switch-to-buffer (or name (generate-new-buffer-name "*look*")))
   ;; reset buffer local variables
-  (if (not add)
+  (unless add
       (setq look-forward-file-list nil
 	    look-reverse-file-list nil
 	    look-current-file nil))
@@ -362,8 +396,8 @@ For any other return value, TARGET is treated as a directory."
 			 (t (funcall how-to target)))))
     (if (and (consp into-dir) (functionp (car into-dir)))
 	(apply (car into-dir) operation rfn-list fn-list target (cdr into-dir))
-      (if (not (or dired-one-file into-dir))
-	  (error "Marked %s: target must be a directory: %s" operation target))
+      (unless (or dired-one-file into-dir)
+	(error "Marked %s: target must be a directory: %s" operation target))
       ;; rename-file bombs when moving directories unless we do this:
       (or into-dir (setq target (directory-file-name target)))
       (if into-dir
@@ -532,78 +566,6 @@ them with `look-dired'."
 							     (replace-regexp-in-string "\\.txt$" ".*" x)))))
 					   (dired-get-marked-files))))
     (kill-buffer buf)))
-
-;; TODO!!
-;; (defcustom look-ocr-suffix "txt"
-;;   "File suffix for text files associated with image files."
-;;   :group 'look
-;;   :type 'string)
-
-;; (defcustom look-ocr-directory nil
-;;   "Directory containing (OCR) text files associated with image/pdf files (e.g. from OCR).
-;; This can be either an absolute or relative directory. If nil then text files will be 
-;; searched for in the same directory as the associated image files."
-;;   :group 'look
-;;   :type 'directory)
-
-;; (defcustom look-ocr-types '("jpg" "JPG" "pdf" "PDF" "gif" "GIF" "png" "PNG" "bmp" "BMP" "tiff" "TIFF")
-;;   "File extensions of files that may have associated text files."
-;;   :group 'look
-;;   :type '(repeat string))
-
-;; (defun look-associated-text-file (file)
-;;   "Return path to text file associated with FILE.
-;; The text should be in `look-ocr-directory' (which see),
-;; with file extension `look-ocr-suffix'."
-;;   (concat (file-name-as-directory
-;; 	   (if look-ocr-directory
-;; 	       (if (file-name-absolute-p look-ocr-directory)
-;; 		   look-ocr-directory
-;; 		 (concat (file-name-directory file) look-ocr-directory))
-;; 	     (file-name-directory file)))
-;; 	  (file-name-base file) "." look-ocr-suffix))
-
-;; (defun look-re-search-forward (regex)
-;;   "Search forward through looked at files."
-;;   (interactive (list (read-regexp "Regexp: ")))
-;;   (while (and look-current-file
-;; 	      (not (if (not (member (file-name-extension look-current-file)
-;; 				    look-ocr-types))
-;; 		       (with-temp-file look-current-file (re-search-forward regex nil t))
-;; 		     (and (file-exists-p (look-associated-text-file look-current-file))
-;; 			  (with-temp-file (look-associated-text-file look-current-file)
-;; 			    (re-search-forward regex nil t))))))
-;;     (look-at-next-file)))
-
-;; (defun look-re-search-backward (regex)
-;;   "Search backward through looked at files."
-;;   (interactive (list (read-regexp "Regexp: ")))
-;;   (while (and look-current-file
-;; 	      (not (if (not (member (file-name-extension look-current-file)
-;; 				    look-ocr-types))
-;; 		       (with-temp-file look-current-file (re-search-backward regex nil t))
-;; 		     (and (file-exists-p (look-associated-text-file look-current-file))
-;; 			  (with-temp-file (look-associated-text-file look-current-file)
-;; 			    (re-search-backward regex nil t))))))
-;;     (look-at-previous-file)))
-
-;; (defcustom look-conversion-commands nil
-;;   "Alist of file extensions and corresponding text conversion commands."
-;;   :group 'look
-;;   :type '(alist :key-type (string :tag "file extension") :value-type (string :tag "command")))
-
-;; (require 'deferred)
-;; (defun look-create-text-files nil
-;;   "Create text files from looked at image files using conversion functions.
-;; The conversion functions are defined in `look-conversion-commands'."
-;;   (let ((buf (get-buffer-create "*look text extraction*")))
-;;   (cl-loop for file in (look-file-list)
-;; 	   for ext = (file-name-extension file)
-;; 	   for cmdstr = (format (cdr (assoc ext look-conversion-commands)) file)
-;; 	   if cmdstr do (start-process "look-text-extraction" buf cmdstr)
-;; 	   )
-  
-;;   ))
 
 
 (provide 'look-dired)
