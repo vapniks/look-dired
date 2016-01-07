@@ -55,8 +55,6 @@
 ;; 
 ;;;;
 
-;; (org-readme-sync)
-;; (auto-document)
 ;;; Commands:
 ;;
 ;; Below is a complete list of commands:
@@ -570,8 +568,8 @@ them with `look-dired'."
 
 (provide 'look-dired)
 
-;; (magit-push)
-;; (yaoddmuse-post "EmacsWiki" "look-dired.el" (buffer-name) (buffer-string) "update")
+;; (org-readme-sync)
+;; (org-readme-add-autoloads)
 
 ;;; look-dired.el ends here
 
