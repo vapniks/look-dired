@@ -180,7 +180,7 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
 				   (look-dired-has-marked-file)))
 		      (dired-buffer (if diredp (current-buffer) nil))
 		      (wildcard (if diredp nil
-				  (read-from-minibuffer "Enter wildcard expression matching filenames: ")))
+				  (ido-read-file-name "Enter wildcard expression matching filenames:\n")))
 		      (name (ido-completing-read
 			     "Look buffer: "
 			     (append '("new buffer") (look-buffer-list))))
