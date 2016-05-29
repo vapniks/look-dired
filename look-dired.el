@@ -180,7 +180,7 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
 				   (look-dired-has-marked-file)))
 		      (dired-buffer (if diredp (current-buffer) nil))
 		      (wildcard (if diredp nil
-				  (read-from-minibuffer "Enter filename (w/ wildcards): ")))
+				  (read-from-minibuffer "Enter filename (with wildcards): ")))
 		      (name (ido-completing-read
 			     "Look buffer: "
 			     (append '("new buffer") (look-buffer-list))))
@@ -202,7 +202,7 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
 		   (setq sum (- sum (nth 7 attrib)))))))
   ;; load eimp if necessary
   (if (and look-wildcard (not (featurep 'eimp))
-       (string-match (regexp-opt (mapcar 'symbol-name image-types))
+	   (string-match (regexp-opt (mapcar 'symbol-name image-types))
 			 look-wildcard))
       (require 'eimp nil t))
   ;; if no wildcard is supplied match everything with *  
@@ -212,9 +212,9 @@ If INDEX is non-nil then goto the INDEX'th file in the list initially."
   (switch-to-buffer (or name (generate-new-buffer-name "*look*")))
   ;; reset buffer local variables
   (unless add
-      (setq look-forward-file-list nil
-	    look-reverse-file-list nil
-	    look-current-file nil))
+    (setq look-forward-file-list nil
+	  look-reverse-file-list nil
+	  look-current-file nil))
   (setq look-dired-buffer dired-buffer
 	look-subdir-list (list "./")
 	look-pwd (replace-regexp-in-string 
