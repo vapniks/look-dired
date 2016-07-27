@@ -144,6 +144,8 @@
 (define-key look-minor-mode-map (kbd "M-U") 'look-dired-unmark-looked-files)
 (define-key look-minor-mode-map (kbd "M-RET") 'look-dired-run-associated-program)
 (define-key look-minor-mode-map (kbd "M-D") 'look-dired-dired)
+(define-key look-minor-mode-map (kbd "!") 'look-dired-do-shell-command)
+(define-key look-minor-mode-map (kbd "&") 'look-dired-do-async-shell-command)
 
 (defadvice look-reset-variables (after look-dired-reset-variables activate)
   "Reset `look-dired-rename-target' and `look-dired-buffer'."
@@ -503,24 +505,52 @@ Requires run-assoc library."
   (run-associated-program look-current-file))
 
 ;;;###autoload
+(defun look-dired-do-shell-command (command &optional arg)
+  "Run a shell command COMMAND on file currently being viewed.
+If a prefix ARG is given, apply the command to all currently looked at files.
+For more details on the COMMAND arg see `dired-do-shell-command'."
+  (interactive
+   (list (dired-read-shell-command "! on %s: " current-prefix-arg
+				   (if current-prefix-arg (look-file-list)
+				     (list look-current-file)))
+	 current-prefix-arg))
+  (let ((files (if arg (look-file-list)
+		 (list look-current-file))))
+    (dired-do-shell-command command nil files)))
+
+;;;###autoload
+(defun look-dired-do-async-shell-command (command &optional arg)
+  "Run a shell command COMMAND asynchronously on file currently being viewed.
+If a prefix ARG is given, apply the command to all currently looked at files.
+For more details on the COMMAND arg see `dired-do-async-shell-command'."
+  (interactive
+   (list (dired-read-shell-command "& on %s: " current-prefix-arg
+				   (if current-prefix-arg (look-file-list)
+				     (list look-current-file)))
+	 current-prefix-arg))
+  (let ((files (if arg (look-file-list)
+		 (list look-current-file))))
+    (dired-do-async-shell-command command nil files)))
+
+;;;###autoload
 (defun look-dired-unmark-file (file)
   "`dired-unmark' FILE in `look-dired-buffer'."
   (assert look-dired-buffer)
   (if (buffer-live-p (if (stringp look-dired-buffer)
 			 (get-buffer look-dired-buffer)
 		       look-dired-buffer))
-    (save-excursion
-      (set-buffer look-dired-buffer)
-      (goto-char (point-min))
-      (block nil
-	(while (not (eobp))
-	  (when (and (not (looking-at dired-re-dot))
-		     (not (eolp))
-		     (let ((fn (dired-get-filename nil t)))
-		       (and fn (string= fn file))))
-	    (dired-unmark 1)
-	    (return-from nil))
-	  (forward-line 1))))
+      (save-excursion
+	(set-buffer look-dired-buffer)
+	(goto-char (point-min))
+	(block nil
+	  (while (not (eobp))
+	    (when (and (not (looking-at dired-re-dot))
+		       (not (eolp))
+		       (let ((fn (dired-get-filename nil t)))
+			 (and fn (string= fn file))))
+	      (dired-unmark 1)
+	      (return-from nil))
+	    (forward-line 1))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
 	     (buffer-name look-dired-buffer)))))

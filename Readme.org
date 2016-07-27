@@ -38,3 +38,151 @@ all of the marked files will be visited in the *look* buffer.
  - If you have [[http://www.marmalade-repo.org/][marmalade-repo.org]], this look-dired is part of the emacs packages you can install.  Just type M-x package-install look-dired marmalade 
  - Otherwise download the library from here Lisp:look-dired, and put it in a directory in the emacs load path, like ~/.emacs.d
  - Add (require 'look-dired) in your ~/.emacs file
+* Functions
+** Interactive Functions
+
+*** look-at-files
+=(look-at-files LOOK-WILDCARD &optional ADD NAME DIRED-BUFFER FILE-LIST
+INDEX)=
+
+Look at files in a directory.  Insert them into a temporary buffer one at a time. 
+This function gets the file list and passes it to =look-at-next-file=.
+When called interactively, if the current directory is a dired buffer containing 
+marked files then those files will be used, otherwise a filename with wildcards
+will be prompted for to match the files to be used. The name of an existing look 
+buffer or new buffer is prompted for. If an existing look buffer is chosen then 
+the files will be added to those in that buffer.
+
+When called programmatically, you can either supply a filename with wildcards to
+the LOOK-WILDCARD argument, or a dired buffer containing marked files as the 
+DIRED-BUFFER argument, or a list of files as the FILE-LIST argument.
+If ADD is non-nil then files are added to the end of the currently looked at files
+in buffer NAME (default "*look*<N>"), otherwise they replace them.
+If INDEX is non-nil then goto the INDEX'th file in the list initially.
+
+*** look-dired-dired
+=(look-dired-dired)=
+
+Jump to a dired buffer containing the looked at files.
+If such a buffer does not already exist, create one.
+
+*** look-dired-do-rename
+=(look-dired-do-rename &optional TARGET PROMPT PREFIX SUFFIX)=
+
+Rename current looked file, to location given by TARGET.
+=look-current-file= will be removed from the file list if the rename succeeds.
+When TARGET is =nil= or prompt is non-nil, prompt for the location.
+PREFIX and SUFFIX specify strings to be placed before and after the cursor in the prompt,
+ (but after the target dir). PREFIX or SUFFIX may also be functions that take a single string 
+argument and return a string. In this case they will be called with the argument set to the 
+filename of the current looked file (without the directory part).
+If PROMPT is nil the file will be moved to this directory while retaining the same filename, unless 
+PREFIX and/or SUFFIX are non-nil in which case the filename will be changed to the concatenation of 
+PREFIX and SUFFIX.
+This command also renames any buffers that are visiting the files.
+The default suggested for the target directory depends on the value of =dired-dwim-target= (usually 
+the directory in which the current file is located).
+
+*** look-dired-find
+=(look-dired-find DIR ARGS)=
+
+Run =find= and view found files in =look-mode= buffer.
+The =find= command run (after changing into DIR) is:
+
+    find . \( ARGS \) -ls
+Warning: this will lock up Emacs if the find command is slow to return.
+Instead you can use =find-dired=, then mark all the files, and look at
+them with =look-dired=.
+
+*** look-dired-mark-current-looked-file
+=(look-dired-mark-current-looked-file &optional SHOW-NEXT-FILE)=
+
+Mark =look-current-file= in the corresponding dired-mode buffer.
+When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
+Similar to =look-dired-unmark-looked-files=, this function only works when
+the *look* has an associated dired-mode buffer.
+
+*** look-dired-mark-looked-files
+=(look-dired-mark-looked-files)=
+
+Mark all currently looked at files in the corresponding dired-mode buffer.
+This is only meaningful when the *look* has an associated =dired-mode= buffer,
+i.e. =look-at-files= is called from a dired-mode buffer.
+
+*** look-dired-run-associated-program
+=(look-dired-run-associated-program)=
+
+Run program associated with currently looked at file.
+Requires run-assoc library.
+
+*** look-dired-unmark-current-looked-file
+=(look-dired-unmark-current-looked-file &optional SHOW-NEXT-FILE)=
+
+Unmark =look-current-file= in the corresponding dired-mode buffer.
+When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
+Similar to =look-dired-unmark-looked-files=, this function only works when
+ the *look* has an associated dired-mode buffer.
+
+*** look-dired-unmark-looked-files
+=(look-dired-unmark-looked-files)=
+
+Unmark all currently looked at files in the corresponding =dired-mode= buffer.
+This is only meaningful when the *look* buffer has an associated =dired-mode= buffer,
+i.e. =look-at-files= is called from a =dired-mode= buffer.
+
+** Internal Functions
+
+*** look-dired-do-create-file
+=(look-dired-do-create-file OP-SYMBOL FILE-CREATOR OPERATION ARG
+&optional MARKER-CHAR OP1 PROMPT TARGET-FILE HOW-TO PREFIX SUFFIX)=
+
+Create a new file for =look-current-file=.
+Prompts user for target, which is a directory in which to create the new files. 
+Target may also be a plain file if only one marked file exists.  
+The way the default for the target directory is computed depends on the value 
+of =dired-dwim-target-directory=.
+OP-SYMBOL is the symbol for the operation.  Function =dired-mark-pop-up=
+will determine whether pop-ups are appropriate for this OP-SYMBOL.
+FILE-CREATOR and OPERATION as in =dired-create-files=.
+ARG as in =dired-get-marked-files=.
+Optional arg MARKER-CHAR as in =dired-create-files=.
+Optional arg OP1 is an alternate form for OPERATION if there is only one file.
+Optional arg PROMPT determines whether prompts for the target location.
+=nil= means not prompt and TARGET-FILE is the target location, non-nil
+means prompt for the target location.
+Optional arg HOW-TO determiness how to treat the target.
+If HOW-TO is nil, use =file-directory-p= to determine if the
+target is a directory.  If so, the marked file(s) are created
+inside that directory.  Otherwise, the target is a plain file;
+an error is raised unless there is exactly one marked file.
+If HOW-TO is t, target is always treated as a plain file.
+Otherwise, HOW-TO should be a function of one argument, TARGET.
+If its return value is nil, TARGET is regarded as a plain file.
+If it return value is a list, TARGET is a generalized
+directory (e.g. some sort of archive).  The first element of
+this list must be a function with at least four arguments:
+ operation - as OPERATION above.
+ rfn-list  - list of the relative names for the marked files.
+ fn-list   - list of the absolute names for the marked files.
+ target    - the name of the target itself.
+The rest of into-dir are optional arguments.
+For any other return value, TARGET is treated as a directory.
+
+*** look-dired-has-marked-file
+=(look-dired-has-marked-file)=
+
+Return =t= if there are marked files in current dired buffer.
+
+*** look-dired-mark-file
+=(look-dired-mark-file FILE)=
+
+=dired-mark= FILE in =look-dired-buffer=.
+
+*** look-dired-unmark-file
+=(look-dired-unmark-file FILE)=
+
+=dired-unmark= FILE in =look-dired-buffer=.
+* Variables
+** Customizable Variables
+
+** Internal Variables
