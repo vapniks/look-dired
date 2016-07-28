@@ -146,6 +146,8 @@
 (define-key look-minor-mode-map (kbd "M-D") 'look-dired-dired)
 (define-key look-minor-mode-map (kbd "!") 'look-dired-do-shell-command)
 (define-key look-minor-mode-map (kbd "&") 'look-dired-do-async-shell-command)
+(define-key look-minor-mode-map (kbd "R") 'look-dired-do-rename)
+(define-key look-minor-mode-map (kbd "C") 'look-dired-do-copy)
 
 (defadvice look-reset-variables (after look-dired-reset-variables activate)
   "Reset `look-dired-rename-target' and `look-dired-buffer'."
@@ -298,7 +300,6 @@ filename of the current looked file (without the directory part).
 If PROMPT is nil the file will be moved to this directory while retaining the same filename, unless 
 PREFIX and/or SUFFIX are non-nil in which case the filename will be changed to the concatenation of 
 PREFIX and SUFFIX.
-This command also renames any buffers that are visiting the files.
 The default suggested for the target directory depends on the value of `dired-dwim-target' (usually 
 the directory in which the current file is located)."
   (interactive)
@@ -308,13 +309,48 @@ the directory in which the current file is located)."
 	       prefix))
 	(post (if (functionp suffix) 
 		  (funcall suffix (file-name-nondirectory look-current-file))
-		suffix)))
+		suffix))
+	(dir (file-name-directory look-current-file))
+	(bufname (buffer-name)))
     (look-dired-do-create-file 'move (function dired-rename-file)
-			       "Move" nil dired-keep-marker-rename "Rename" prompt target nil pre post)
+			       "Move" nil dired-keep-marker-rename
+			       "Rename" prompt target nil pre post)
+    ;; make sure `look-mode' is still enabled
+    (unless look-mode (look-mode 1))
     ;; if `look-current-file' exists, it means there is no need to delete `look-current-file'
     (unless (file-exists-p look-current-file)
-      (setq look-current-file nil)
+      (setq look-current-file (concat dir (buffer-name)))
+      (rename-buffer bufname)
       (look-at-next-file))))
+
+;;;###autoload
+(defun look-dired-do-copy (&optional target prompt prefix suffix)
+  "Copy current looked file, to location given by TARGET.
+When TARGET is `nil' or prompt is non-nil, prompt for the location.
+PREFIX and SUFFIX specify strings to be placed before and after the cursor in the prompt,
+ (but after the target dir). PREFIX or SUFFIX may also be functions that take a single string 
+argument and return a string. In this case they will be called with the argument set to the 
+filename of the current looked file (without the directory part).
+If PROMPT is nil the file will be moved to this directory while retaining the same filename, unless 
+PREFIX and/or SUFFIX are non-nil in which case the filename will be changed to the concatenation of 
+PREFIX and SUFFIX.
+The default suggested for the target directory depends on the value of `dired-dwim-target' (usually 
+the directory in which the current file is located)."
+  (interactive)
+  (let ((prompt (if (null target) t prompt))
+	(pre (if (functionp prefix) 
+		 (funcall prefix (file-name-nondirectory look-current-file))
+	       prefix))
+	(post (if (functionp suffix) 
+		  (funcall suffix (file-name-nondirectory look-current-file))
+		suffix))
+	(dir (file-name-directory look-current-file))
+	(bufname (buffer-name)))
+    (look-dired-do-create-file 'copy (function dired-copy-file)
+			       "Copy" nil dired-keep-marker-copy
+			       "Copy" prompt target dired-copy-how-to-fn pre post)
+    ;; make sure `look-mode' is still enabled
+    (unless look-mode (look-mode 1))))
 
 ;;; This is a modified version of `dired-do-create-files'
 ;;; TODO: Should `look-current-file' be updated after the moving? Now
@@ -333,7 +369,7 @@ OP-SYMBOL is the symbol for the operation.  Function `dired-mark-pop-up'
 will determine whether pop-ups are appropriate for this OP-SYMBOL.
 FILE-CREATOR and OPERATION as in `dired-create-files'.
 ARG as in `dired-get-marked-files'.
-Optional arg MARKER-CHAR as in `dired-create-files'.
+Optional arg MARKER-CHAR as in `dired-create-files'.e
 Optional arg OP1 is an alternate form for OPERATION if there is only one file.
 Optional arg PROMPT determines whether prompts for the target location.
 `nil' means not prompt and TARGET-FILE is the target location, non-nil
@@ -420,7 +456,7 @@ For any other return value, TARGET is treated as a directory."
 ;;; of the filename (after the cursor position) in the prompt.
 ;;;###autoload
 (defun look-dired-mark-read-file-name (prompt dir op-symbol arg files
-					 &optional default initial)
+					      &optional default initial)
   (dired-mark-pop-up
    nil op-symbol files
    (function read-file-name)
