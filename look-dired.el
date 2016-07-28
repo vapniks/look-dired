@@ -510,9 +510,9 @@ Requires run-assoc library."
 If a prefix ARG is given, apply the command to all currently looked at files.
 For more details on the COMMAND arg see `dired-do-shell-command'."
   (interactive
-   (list (dired-read-shell-command "! on %s: " current-prefix-arg
-				   (if current-prefix-arg (look-file-list)
-				     (list look-current-file)))
+   (list (dired-read-shell-command
+	  "! on %s: " nil (if current-prefix-arg (look-file-list)
+			    (list look-current-file)))
 	 current-prefix-arg))
   (let ((files (if arg (look-file-list)
 		 (list look-current-file))))
@@ -524,9 +524,9 @@ For more details on the COMMAND arg see `dired-do-shell-command'."
 If a prefix ARG is given, apply the command to all currently looked at files.
 For more details on the COMMAND arg see `dired-do-async-shell-command'."
   (interactive
-   (list (dired-read-shell-command "& on %s: " current-prefix-arg
-				   (if current-prefix-arg (look-file-list)
-				     (list look-current-file)))
+   (list (dired-read-shell-command
+	  "& on %s: " nil (if current-prefix-arg (look-file-list)
+			    (list look-current-file)))
 	 current-prefix-arg))
   (let ((files (if arg (look-file-list)
 		 (list look-current-file))))
