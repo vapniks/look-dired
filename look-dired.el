@@ -469,10 +469,26 @@ For any other return value, TARGET is treated as a directory."
 This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
 i.e. `look-at-files' is called from a `dired-mode' buffer."
   (interactive)
-  (when look-dired-buffer
-    (let ((file-list (look-file-list)))
-      (mapc #'look-dired-unmark-file file-list))
-    (message "Unmarked all looked at files in dired buffer")))
+  (unless look-dired-buffer
+    (error "No associated dired buffer"))  
+  (let ((file-list (look-file-list)))
+    (if (buffer-live-p (if (stringp look-dired-buffer)
+			   (get-buffer look-dired-buffer)
+			 look-dired-buffer))
+	(with-current-buffer look-dired-buffer
+	  (save-excursion
+	    (goto-char (point-min))
+	    (while (not (eobp))
+	      (if (and (not (looking-at dired-re-dot))
+		       (not (eolp))
+		       (let ((fn (dired-get-filename nil t)))
+			 (and fn (member fn file-list))))
+		  (dired-unmark 1)
+		(forward-line 1)))
+	    (message "Unmarked all looked at files in dired buffer")))
+      (error "No %s buffer available"
+	     (if (stringp look-dired-buffer) look-dired-buffer
+	       (buffer-name look-dired-buffer))))))
 
 ;;;###autoload
 (defun look-dired-mark-looked-files ()
