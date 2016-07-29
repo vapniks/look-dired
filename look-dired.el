@@ -532,18 +532,18 @@ Similar to `look-dired-unmark-looked-files', this function only works when
   (if (buffer-live-p (if (stringp look-dired-buffer)
 			 (get-buffer look-dired-buffer)
 		       look-dired-buffer))
-      (save-excursion
-	(set-buffer look-dired-buffer)
-	(goto-char (point-min))
-	(block nil
-	  (while (not (eobp))
-	    (when (and (not (looking-at dired-re-dot))
-		       (not (eolp))
-		       (let ((fn (dired-get-filename nil t)))
-			 (and fn (string= fn file))))
-	      (dired-mark 1)
-	      (return-from nil))
-	    (forward-line 1))))
+      (with-current-buffer look-dired-buffer
+	(save-excursion
+	  (goto-char (point-min))
+	  (block nil
+	    (while (not (eobp))
+	      (when (and (not (looking-at dired-re-dot))
+			 (not (eolp))
+			 (let ((fn (dired-get-filename nil t)))
+			   (and fn (string= fn file))))
+		(dired-mark 1)
+		(return-from nil))
+	      (forward-line 1)))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
 	     (buffer-name look-dired-buffer)))))
@@ -591,18 +591,18 @@ For more details on the COMMAND arg see `dired-do-async-shell-command'."
   (if (buffer-live-p (if (stringp look-dired-buffer)
 			 (get-buffer look-dired-buffer)
 		       look-dired-buffer))
-      (save-excursion
-	(set-buffer look-dired-buffer)
-	(goto-char (point-min))
-	(block nil
-	  (while (not (eobp))
-	    (when (and (not (looking-at dired-re-dot))
-		       (not (eolp))
-		       (let ((fn (dired-get-filename nil t)))
-			 (and fn (string= fn file))))
-	      (dired-unmark 1)
-	      (return-from nil))
-	    (forward-line 1))))
+      (with-current-buffer look-dired-buffer
+	(save-excursion
+	  (goto-char (point-min))
+	  (block nil
+	    (while (not (eobp))
+	      (when (and (not (looking-at dired-re-dot))
+			 (not (eolp))
+			 (let ((fn (dired-get-filename nil t)))
+			   (and fn (string= fn file))))
+		(dired-unmark 1)
+		(return-from nil))
+	      (forward-line 1)))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
 	     (buffer-name look-dired-buffer)))))
