@@ -632,6 +632,9 @@ them with `look-dired'."
     (kill-buffer buf)))
 
 
+;; Make sure associated dired buffer is remembered when *look* buffer is recreated
+(setq look-local-vars (cons 'look-dired-buffer look-local-vars))
+
 (provide 'look-dired)
 
 ;; (org-readme-sync)
