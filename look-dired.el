@@ -149,6 +149,7 @@
 (define-key look-minor-mode-map (kbd "&") 'look-dired-do-async-shell-command)
 (define-key look-minor-mode-map (kbd "R") 'look-dired-do-rename)
 (define-key look-minor-mode-map (kbd "C") 'look-dired-do-copy)
+(define-key look-minor-mode-map (kbd "D") 'look-dired-flag-current-looked-file-deletion)
 
 (defadvice look-reset-variables (after look-dired-reset-variables activate)
   "Reset `look-dired-rename-target' and `look-dired-buffer'."
@@ -495,6 +496,38 @@ i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error wi
 	       (buffer-name look-dired-buffer))))))
 
 ;;;###autoload
+(defun look-dired-apply-to-current-looked-file (func)
+  "Call function FUNC with currently looked at file as argument.
+FUNC will be called with the value of `look-current-file' as its only argument,
+and with the current buffer set to the associated `dired-mode' buffer with point
+on the line of `look-current-file'.
+This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
+i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error will
+be thrown."
+  (unless look-dired-buffer
+    (error "No associated dired buffer"))
+  (assert look-current-file)
+  (if (buffer-live-p (if (stringp look-dired-buffer)
+			 (get-buffer look-dired-buffer)
+		       look-dired-buffer))
+      (let ((file look-current-file) fn)
+	(with-current-buffer look-dired-buffer
+	  (save-excursion
+	    (goto-char (point-min))
+	    (block nil
+	      (while (not (eobp))
+		(when (and (not (looking-at dired-re-dot))
+			   (not (eolp))
+			   (setq fn (dired-get-filename nil t))
+			   (and fn (string= fn file)))
+		  (funcall func fn)
+		  (return-from nil))
+		(forward-line 1))))))
+    (error "No %s buffer available"
+	   (if (stringp look-dired-buffer) look-dired-buffer
+	     (buffer-name look-dired-buffer)))))
+
+;;;###autoload
 (defun look-dired-unmark-looked-files ()
   "Unmark all currently looked at files in the corresponding `dired-mode' buffer.
 This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
@@ -523,50 +556,36 @@ i.e. `look-at-files' is called from a `dired-mode' buffer."
 
 ;;;###autoload
 (defun look-dired-mark-current-looked-file (&optional show-next-file)
-  "Mark `look-current-file' in the corresponding dired-mode buffer.
+  "Mark `look-current-file' in the corresponding `dired-mode' buffer.
 When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
 Similar to `look-dired-unmark-looked-files', this function only works when
-the *look* has an associated dired-mode buffer."
+the *look* has an associated `dired-mode' buffer."
   (interactive)
-  (when look-dired-buffer
-    (look-dired-mark-file look-current-file)
-    (message (concat "Marked " (file-name-nondirectory look-current-file) " in dired buffer"))
-    (when show-next-file (look-at-next-file))))
+  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-mark 1)))
+  (message (concat "Marked " (file-name-nondirectory look-current-file) " in dired buffer"))
+  (when show-next-file (look-at-next-file)))
+
+;;;###autoload
+(defun look-dired-flag-current-looked-file-deletion (&optional show-next-file)
+  "Mark for deletion `look-current-file' in the corresponding `dired-mode' buffer.
+When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
+Similar to `look-dired-unmark-looked-files', this function only works when
+the *look* has an associated `dired-mode' buffer."
+  (interactive)
+  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-flag-file-deletion 1)))
+  (message (concat "Marked for deletion " (file-name-nondirectory look-current-file) " in dired buffer"))
+  (when show-next-file (look-at-next-file)))
 
 ;;;###autoload
 (defun look-dired-unmark-current-looked-file (&optional show-next-file)
-  "Unmark `look-current-file' in the corresponding dired-mode buffer.
+  "Unmark `look-current-file' in the corresponding `dired-mode' buffer.
 When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
 Similar to `look-dired-unmark-looked-files', this function only works when
- the *look* has an associated dired-mode buffer."
+ the *look* has an associated `dired-mode' buffer."
   (interactive)
-  (when look-dired-buffer
-    (look-dired-unmark-file look-current-file)
-    (message (concat "Unmarked " (file-name-nondirectory look-current-file) " in dired buffer"))
-    (when show-next-file (look-at-next-file))))
-
-;;;###autoload
-(defun look-dired-mark-file (file)
-  "`dired-mark' FILE in `look-dired-buffer'."
-  (assert look-dired-buffer)
-  (if (buffer-live-p (if (stringp look-dired-buffer)
-			 (get-buffer look-dired-buffer)
-		       look-dired-buffer))
-      (with-current-buffer look-dired-buffer
-	(save-excursion
-	  (goto-char (point-min))
-	  (block nil
-	    (while (not (eobp))
-	      (when (and (not (looking-at dired-re-dot))
-			 (not (eolp))
-			 (let ((fn (dired-get-filename nil t)))
-			   (and fn (string= fn file))))
-		(dired-mark 1)
-		(return-from nil))
-	      (forward-line 1)))))
-    (error "No %s buffer available"
-	   (if (stringp look-dired-buffer) look-dired-buffer
-	     (buffer-name look-dired-buffer)))))
+  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-unmark 1)))
+  (message (concat "Unmarked " (file-name-nondirectory look-current-file) " in dired buffer"))
+  (when show-next-file (look-at-next-file)))
 
 ;;;###autoload
 (defun look-dired-run-associated-program nil
@@ -603,29 +622,6 @@ For more details on the COMMAND arg see `dired-do-async-shell-command'."
   (let ((files (if arg (look-file-list)
 		 (list look-current-file))))
     (dired-do-async-shell-command command nil files)))
-
-;;;###autoload
-(defun look-dired-unmark-file (file)
-  "`dired-unmark' FILE in `look-dired-buffer'."
-  (assert look-dired-buffer)
-  (if (buffer-live-p (if (stringp look-dired-buffer)
-			 (get-buffer look-dired-buffer)
-		       look-dired-buffer))
-      (with-current-buffer look-dired-buffer
-	(save-excursion
-	  (goto-char (point-min))
-	  (block nil
-	    (while (not (eobp))
-	      (when (and (not (looking-at dired-re-dot))
-			 (not (eolp))
-			 (let ((fn (dired-get-filename nil t)))
-			   (and fn (string= fn file))))
-		(dired-unmark 1)
-		(return-from nil))
-	      (forward-line 1)))))
-    (error "No %s buffer available"
-	   (if (stringp look-dired-buffer) look-dired-buffer
-	     (buffer-name look-dired-buffer)))))
 
 ;;;###autoload
 (defun look-dired-dired nil
