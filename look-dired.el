@@ -465,16 +465,20 @@ For any other return value, TARGET is treated as a directory."
 
 ;;;;;;;;;; Look dired mark/unmark commands ;;;;;;;;;;;
 ;;;###autoload
-(defun look-dired-map-looked-files (func)
+(defun look-dired-map-looked-files (func &optional file)
   "Apply function FUNC to all currently looked at files in the associated `dired-mode' buffer.
 FUNC will be called with a single argument: the name of the file currently being processed,
 and with the current buffer set to the associated `dired-mode' buffer with point on the line
-of the current file.
-This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
+of the currently processed file (if found).
+To process just a single file set the FILE argument to the filepath (e.g. `look-current-file').
+FILE will only be processed if it exists in the associated `dired-mode' buffer.
+
+This function is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
 i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error will be thrown."
   (unless look-dired-buffer
     (error "No associated dired buffer"))  
-  (let ((file-list (look-file-list)))
+  (let ((file-list (look-file-list))
+	(retval nil))
     (if (buffer-live-p (if (stringp look-dired-buffer)
 			   (get-buffer look-dired-buffer)
 			 look-dired-buffer))
@@ -482,51 +486,23 @@ i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error wi
 	  (save-excursion
 	    (goto-char (point-min))
 	    (let (fn (oldfn 'nofile))
-	      (while (not (eobp))
-		(if (and (not (looking-at dired-re-dot))
-			 (not (eolp))
-			 (setq fn (dired-get-filename nil t))
-			 (and fn (not (equal fn oldfn))
-			      (member fn file-list)))
-		    (funcall func fn)
-		  (forward-line 1))))))
+	      (unless (cl-loop while (not (eobp))
+			       if (and (not (looking-at dired-re-dot))
+				       (not (eolp))
+				       (setq fn (dired-get-filename nil t))
+				       (and fn (not (equal fn oldfn))
+					    (if file (string= fn file)
+					      (member fn file-list))))
+			       do (progn (funcall func fn)
+					 (if file (return-from nil t)
+					   (setq retval t)))
+			       else do (forward-line 1)
+			       finally return retval)
+		(if file (error "Unable to find file %s in dired buffer %s" file (buffer-name))
+		  (error "Unable to find any looked at files in dired buffer %s" (buffer-name)))))))
       (error "No %s buffer available"
 	     (if (stringp look-dired-buffer) look-dired-buffer
 	       (buffer-name look-dired-buffer))))))
-
-;;;###autoload
-(defun look-dired-apply-to-current-looked-file (func)
-  "Call function FUNC with currently looked at file as argument.
-FUNC will be called with the value of `look-current-file' as its only argument,
-and with the current buffer set to the associated `dired-mode' buffer with point
-on the line of `look-current-file'.
-This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
-i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error will
-be thrown."
-  (unless look-dired-buffer
-    (error "No associated dired buffer"))
-  (assert look-current-file)
-  (if (buffer-live-p (if (stringp look-dired-buffer)
-			 (get-buffer look-dired-buffer)
-		       look-dired-buffer))
-      (let ((file look-current-file) fn)
-	(with-current-buffer look-dired-buffer
-	  (save-excursion
-	    (goto-char (point-min))
-	    (unless (block nil
-		      (while (not (eobp))
-			(when (and (not (looking-at dired-re-dot))
-				   (not (eolp))
-				   (setq fn (dired-get-filename nil t))
-				   (and fn (string= fn file)))
-			  (funcall func fn)
-			  (return-from nil t))
-			(forward-line 1)
-			nil))
-	      (error "Unable to find file %s in dired buffer %s" file (buffer-name))))))
-    (error "No %s buffer available"
-	   (if (stringp look-dired-buffer) look-dired-buffer
-	     (buffer-name look-dired-buffer)))))
 
 ;;;###autoload
 (defun look-dired-unmark-looked-files ()
@@ -562,7 +538,7 @@ When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
 Similar to `look-dired-unmark-looked-files', this function only works when
 the *look* has an associated `dired-mode' buffer."
   (interactive)
-  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-mark 1)))
+  (look-dired-map-looked-files (lambda (fn) (dired-mark 1)) look-current-file)
   (message (concat "Marked " (file-name-nondirectory look-current-file) " in dired buffer"))
   (when show-next-file (look-at-next-file)))
 
@@ -573,7 +549,7 @@ When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
 Similar to `look-dired-unmark-looked-files', this function only works when
 the *look* has an associated `dired-mode' buffer."
   (interactive)
-  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-flag-file-deletion 1)))
+  (look-dired-map-looked-files (lambda (fn) (dired-flag-file-deletion 1)) look-current-file)
   (message (concat "Marked for deletion " (file-name-nondirectory look-current-file) " in dired buffer"))
   (when show-next-file (look-at-next-file)))
 
@@ -584,7 +560,7 @@ When SHOW-NEXT-FILE is non-nil, the next file will be looked at.
 Similar to `look-dired-unmark-looked-files', this function only works when
  the *look* has an associated `dired-mode' buffer."
   (interactive)
-  (look-dired-apply-to-current-looked-file (lambda (fn) (dired-unmark 1)))
+  (look-dired-map-looked-files (lambda (fn) (dired-unmark 1)) look-current-file)
   (message (concat "Unmarked " (file-name-nondirectory look-current-file) " in dired buffer"))
   (when show-next-file (look-at-next-file)))
 
