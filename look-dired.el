@@ -140,10 +140,11 @@
 (define-key look-minor-mode-map (kbd "M-r") 'look-dired-do-rename)
 (define-key look-minor-mode-map (kbd "M-m") 'look-dired-mark-current-looked-file)
 (define-key look-minor-mode-map (kbd "M-M") 'look-dired-mark-looked-files)
+(define-key look-minor-mode-map (kbd "M-D") 'look-dired-flag-looked-files-deletion)
 (define-key look-minor-mode-map (kbd "M-u") 'look-dired-unmark-current-looked-file)
 (define-key look-minor-mode-map (kbd "M-U") 'look-dired-unmark-looked-files)
 (define-key look-minor-mode-map (kbd "M-RET") 'look-dired-run-associated-program)
-(define-key look-minor-mode-map (kbd "M-D") 'look-dired-dired)
+(define-key look-minor-mode-map (kbd "M-d") 'look-dired-dired)
 (define-key look-minor-mode-map (kbd "!") 'look-dired-do-shell-command)
 (define-key look-minor-mode-map (kbd "&") 'look-dired-do-async-shell-command)
 (define-key look-minor-mode-map (kbd "R") 'look-dired-do-rename)
@@ -464,11 +465,13 @@ For any other return value, TARGET is treated as a directory."
 
 ;;;;;;;;;; Look dired mark/unmark commands ;;;;;;;;;;;
 ;;;###autoload
-(defun look-dired-unmark-looked-files ()
-  "Unmark all currently looked at files in the corresponding `dired-mode' buffer.
+(defun look-dired-map-looked-files (func)
+  "Apply function FUNC to all currently looked at files in the associated `dired-mode' buffer.
+FUNC will be called with a single argument: the name of the file currently being processed,
+and with the current buffer set to the associated `dired-mode' buffer with point on the line
+of the current file.
 This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
-i.e. `look-at-files' is called from a `dired-mode' buffer."
-  (interactive)
+i.e. `look-at-files' is called from a `dired-mode' buffer, otherwise an error will be thrown."
   (unless look-dired-buffer
     (error "No associated dired buffer"))  
   (let ((file-list (look-file-list)))
@@ -478,28 +481,45 @@ i.e. `look-at-files' is called from a `dired-mode' buffer."
 	(with-current-buffer look-dired-buffer
 	  (save-excursion
 	    (goto-char (point-min))
-	    (while (not (eobp))
-	      (if (and (not (looking-at dired-re-dot))
-		       (not (eolp))
-		       (let ((fn (dired-get-filename nil t)))
-			 (and fn (member fn file-list))))
-		  (dired-unmark 1)
-		(forward-line 1)))
-	    (message "Unmarked all looked at files in dired buffer")))
+	    (let (fn (oldfn 'nofile))
+	      (while (not (eobp))
+		(if (and (not (looking-at dired-re-dot))
+			 (not (eolp))
+			 (setq fn (dired-get-filename nil t))
+			 (and fn (not (equal fn oldfn))
+			      (member fn file-list)))
+		    (funcall func fn)
+		  (forward-line 1))))))
       (error "No %s buffer available"
 	     (if (stringp look-dired-buffer) look-dired-buffer
 	       (buffer-name look-dired-buffer))))))
 
 ;;;###autoload
-(defun look-dired-mark-looked-files ()
-  "Mark all currently looked at files in the corresponding dired-mode buffer.
-This is only meaningful when the *look* has an associated `dired-mode' buffer,
-i.e. `look-at-files' is called from a dired-mode buffer."
+(defun look-dired-unmark-looked-files ()
+  "Unmark all currently looked at files in the corresponding `dired-mode' buffer.
+This is only meaningful when the *look* buffer has an associated `dired-mode' buffer,
+i.e. `look-at-files' is called from a `dired-mode' buffer."
   (interactive)
-  (when look-dired-buffer
-    (let ((file-list (look-file-list)))
-      (mapc #'look-dired-mark-file file-list))
-    (message "Marked all looked at files in dired buffer")))
+  (look-dired-map-looked-files (lambda (fn) (dired-unmark 1)))
+  (message "Unmarked all looked at files in dired buffer"))
+
+;;;###autoload
+(defun look-dired-mark-looked-files ()
+  "Mark all currently looked at files in the corresponding `dired-mode' buffer.
+This is only meaningful when the *look* has an associated `dired-mode' buffer,
+i.e. `look-at-files' is called from a `dired-mode' buffer."
+  (interactive)
+  (look-dired-map-looked-files (lambda (fn) (dired-mark 1)))
+  (message "Marked all looked at files in dired buffer"))
+
+;;;###autoload
+(defun look-dired-flag-looked-files-deletion ()
+  "Mark for deletion all currently looked at files in the corresponding `dired-mode' buffer.
+This is only meaningful when the *look* has an associated `dired-mode' buffer,
+i.e. `look-at-files' is called from a `dired-mode' buffer."
+  (interactive)
+  (look-dired-map-looked-files (lambda (fn) (dired-flag-file-deletion 1)))
+  (message "Marked for deletion all looked at files in dired buffer"))
 
 ;;;###autoload
 (defun look-dired-mark-current-looked-file (&optional show-next-file)
