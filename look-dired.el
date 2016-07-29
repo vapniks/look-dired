@@ -513,15 +513,17 @@ be thrown."
 	(with-current-buffer look-dired-buffer
 	  (save-excursion
 	    (goto-char (point-min))
-	    (block nil
-	      (while (not (eobp))
-		(when (and (not (looking-at dired-re-dot))
-			   (not (eolp))
-			   (setq fn (dired-get-filename nil t))
-			   (and fn (string= fn file)))
-		  (funcall func fn)
-		  (return-from nil))
-		(forward-line 1))))))
+	    (unless (block nil
+		      (while (not (eobp))
+			(when (and (not (looking-at dired-re-dot))
+				   (not (eolp))
+				   (setq fn (dired-get-filename nil t))
+				   (and fn (string= fn file)))
+			  (funcall func fn)
+			  (return-from nil t))
+			(forward-line 1)
+			nil))
+	      (error "Unable to find file %s in dired buffer %s" file (buffer-name))))))
     (error "No %s buffer available"
 	   (if (stringp look-dired-buffer) look-dired-buffer
 	     (buffer-name look-dired-buffer)))))
