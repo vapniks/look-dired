@@ -312,7 +312,6 @@ the directory in which the current file is located)."
 	(post (if (functionp suffix) 
 		  (funcall suffix (file-name-nondirectory look-current-file))
 		suffix))
-	(dir (file-name-directory look-current-file))
 	(bufname (buffer-name)))
     (look-dired-do-create-file 'move (function dired-rename-file)
 			       "Move" nil dired-keep-marker-rename
@@ -321,7 +320,7 @@ the directory in which the current file is located)."
     (unless look-mode (look-mode 1))
     ;; if `look-current-file' exists, it means there is no need to delete `look-current-file'
     (unless (file-exists-p look-current-file)
-      (setq look-current-file (concat dir (buffer-name)))
+      (setq look-current-file (concat default-directory (buffer-name)))
       (rename-buffer bufname)
       (look-at-next-file))))
 
